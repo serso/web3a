@@ -20,8 +20,10 @@ import org.web3j.crypto.Bip39Wallet;
 import org.web3j.crypto.Bip44WalletUtils;
 import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.Sign;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.utils.Numeric;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mMnemonic;
     private TextView mAddress;
     private TextView mBalance;
+    private TextView mSignature;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +50,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mBalance = findViewById(R.id.balance);
         mBalance.setOnClickListener(this);
+
+        mSignature = findViewById(R.id.signature);
+        mSignature.setOnClickListener(this);
 
         new LoadWalletTask(this).execute();
     }
@@ -63,10 +69,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void onCredentialsLoaded(@NonNull Credentials credentials) {
         mAddress.setText(credentials.getAddress());
         new GetBalanceTask(this, credentials).execute();
+        new SignMessageTask(this, credentials).execute();
     }
 
     private void onBalanceReceived(@Nullable BigInteger balance) {
         mBalance.setText(balance == null ? "N/A" : balance.toString());
+    }
+
+    private void onMessageSigned(@NonNull String message, @NonNull Sign.SignatureData sig) {
+        final byte[] result = new byte[65];
+        System.arraycopy(sig.getR(), 0, result, 0, 32);
+        System.arraycopy(sig.getS(), 0, result, 32, 32);
+        result[64] = sig.getV();
+        mSignature
+                .setText(String.format("Msg = %s\nSig = %s", message, Numeric.toHexString(result)));
     }
 
     @Override
@@ -137,6 +153,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         protected void handleResult(@NonNull MainActivity activity,
                                     @NonNull Credentials credentials) {
             activity.onCredentialsLoaded(credentials);
+        }
+    }
+
+    private static class SignMessageTask extends BaseTask<Sign.SignatureData> {
+        @NonNull
+        private final Credentials mCredentials;
+        @NonNull
+        private final String mMessage = "test";
+
+        private SignMessageTask(@NonNull MainActivity activity,
+                                @NonNull Credentials credentials) {
+            super(activity);
+            mCredentials = credentials;
+        }
+
+        @Override
+        protected void handleResult(@NonNull MainActivity activity,
+                                    @NonNull Sign.SignatureData signature) {
+            activity.onMessageSigned(mMessage, signature);
+        }
+
+        @NonNull
+        @Override
+        protected Sign.SignatureData doInBackground(Void... voids) {
+            return Sign.signPrefixedMessage(mMessage.getBytes(), mCredentials.getEcKeyPair());
         }
     }
 
