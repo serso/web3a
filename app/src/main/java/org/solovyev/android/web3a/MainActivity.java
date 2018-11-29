@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.web3j.crypto.Bip32ECKeyPair;
 import org.web3j.crypto.Bip39Wallet;
 import org.web3j.crypto.Bip44WalletUtils;
 import org.web3j.crypto.CipherException;
@@ -124,7 +125,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @NonNull
         @Override
         protected Credentials doInBackground(Void... voids) {
-            return Bip44WalletUtils.loadBip44Credentials(App.PASSWORD, mWallet.getMnemonic());
+            final Credentials credentials =
+                    Bip44WalletUtils.loadBip44Credentials(App.PASSWORD, mWallet.getMnemonic());
+            // m/44'/60'/0'/0
+            final Bip32ECKeyPair keyPair = (Bip32ECKeyPair) credentials.getEcKeyPair();
+            // m/44'/60'/0'/0/0
+            return Credentials.create(Bip32ECKeyPair.deriveKeyPair(keyPair, new int[]{0}));
         }
 
         @Override
@@ -185,9 +191,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (TextUtils.isEmpty(filename) || TextUtils.isEmpty(mnemonic)) {
                     return generate(dir);
                 }
-                final Credentials credentials =
-                        Bip44WalletUtils.loadCredentials(App.PASSWORD, new File(dir, filename));
-                if (credentials == null) return generate(dir);
+                // validate
+                Bip44WalletUtils.loadBip44Credentials(App.PASSWORD, mnemonic);
                 return new Bip39Wallet(filename, mnemonic);
             } catch (CipherException | IOException e) {
                 handleError(e);

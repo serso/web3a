@@ -14,7 +14,7 @@ public class App extends MultiDexApplication {
     @NonNull
     static final String TAG = "web3a";
     @NonNull
-    static final String PASSWORD = "web3a-pass";
+    static final String PASSWORD = "";
 
     @NonNull
     public static App get(@NonNull Context context) {
