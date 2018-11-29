@@ -3,7 +3,6 @@ package org.solovyev.android.web3a;
 import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -83,12 +82,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private abstract static class BaseTask<R> extends AsyncTask<Void, Void, R> {
         @SuppressLint("StaticFieldLeak")
         @NonNull
-        final Context mContext;
+        final App mApp;
         @NonNull
         final WeakReference<MainActivity> mActivity;
 
         private BaseTask(@NonNull MainActivity activity) {
-            mContext = activity.getApplicationContext();
+            mApp = App.get(activity);
             mActivity = new WeakReference<>(activity);
         }
 
@@ -108,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             final MainActivity activity = mActivity.get();
             if (activity == null) return;
             activity.runOnUiThread(
-                    () -> Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show());
+                    () -> Toast.makeText(mApp, e.getMessage(), Toast.LENGTH_LONG).show());
         }
     }
 
@@ -152,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         protected BigInteger doInBackground(Void... voids) {
-            final Web3j web3j = App.get(mContext).getWeb3j();
+            final Web3j web3j = mApp.getWeb3j();
             try {
                 return web3j
                         .ethGetBalance(mCredentials.getAddress(), DefaultBlockParameterName.LATEST)
@@ -178,9 +177,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Nullable
         @Override
         protected Bip39Wallet doInBackground(Void... voids) {
-            final File dir = mContext.getFilesDir();
+            final File dir = mApp.getFilesDir();
             try {
-                final SharedPreferences prefs = App.get(mContext).getPrefs();
+                final SharedPreferences prefs = mApp.getPrefs();
                 final String filename = prefs.getString("filename", "");
                 final String mnemonic = prefs.getString("mnemonic", "");
                 if (TextUtils.isEmpty(filename) || TextUtils.isEmpty(mnemonic)) {
@@ -202,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             final File file = new File(dir, wallet.getFilename());
             if (!file.exists()) throw new IOException("No file created");
 
-            final SharedPreferences prefs = App.get(mContext).getPrefs();
+            final SharedPreferences prefs = mApp.getPrefs();
             final SharedPreferences.Editor editor = prefs.edit();
             editor.putString("filename", wallet.getFilename());
             editor.putString("mnemonic", wallet.getMnemonic());
