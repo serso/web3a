@@ -24,11 +24,13 @@ import org.web3j.crypto.Hash;
 import org.web3j.crypto.Sign;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.utils.Convert;
 import org.web3j.utils.Numeric;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -84,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void onBalanceReceived(@Nullable BigInteger balance) {
-        mBalance.setText(balance == null ? "N/A" : balance.toString());
+        mBalance.setText(balance == null ? "N/A" : Convert.fromWei(new BigDecimal(balance), Convert.Unit.ETHER).toPlainString() + "ETH");
     }
 
     private void onMessageSigned(@NonNull String message, @NonNull Sign.SignatureData sig) {
