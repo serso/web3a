@@ -20,6 +20,7 @@ import org.web3j.crypto.Bip39Wallet;
 import org.web3j.crypto.Bip44WalletUtils;
 import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.Hash;
 import org.web3j.crypto.Sign;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -177,7 +178,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @NonNull
         @Override
         protected Sign.SignatureData doInBackground(Void... voids) {
-            return Sign.signPrefixedMessage(mMessage.getBytes(), mCredentials.getEcKeyPair());
+            final String hash = Hash.sha3(Numeric.toHexString(mMessage.getBytes()));
+            return Sign.signPrefixedMessage(Numeric.hexStringToByteArray(hash),
+                    mCredentials.getEcKeyPair());
         }
     }
 
