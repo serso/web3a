@@ -14,6 +14,8 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,9 +39,13 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    @NonNull
+    private final Set<BaseTask<?>> mRunningTasks = new HashSet<>();
     @Nullable
     private Credentials mCredentials;
 
@@ -73,8 +79,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mEnsNameToAddress = findViewById(R.id.ens_name_to_address);
         mEnsNameToAddress.setOnClickListener(this);
 
+        startLoading();
+    }
+
+    private void startLoading() {
         new LoadWalletTask(this).execute();
         new EnsResolveNameToAddressTask(this).execute();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_main_refresh:
+                reset();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void reset() {
+        for (BaseTask<?> task : mRunningTasks) {
+            task.cancel(false);
+        }
+        mRunningTasks.clear();
+
+        mCredentials = null;
+        resetViews();
+        startLoading();
+    }
+
+    private void resetViews() {
+        mMnemonic.setText(null);
+        mAddress.setText(null);
+        mBalance.setText(null);
+        mSignature.setText(null);
+        mSendEth.setEnabled(false);
+        mEnsNameToAddress.setText(null);
     }
 
     private void onWalletLoaded(@Nullable Bip39Wallet wallet) {
@@ -100,7 +146,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void onBalanceReceived(@Nullable BigInteger balance) {
-        mBalance.setText(balance == null ? "N/A" : Convert.fromWei(new BigDecimal(balance), Convert.Unit.ETHER).toPlainString() + "ETH");
+        mBalance.setText(balance == null ? "N/A" :
+                Convert.fromWei(new BigDecimal(balance), Convert.Unit.ETHER).toPlainString() +
+                        "ETH");
     }
 
     private void onMessageSigned(@NonNull String message, @NonNull Sign.SignatureData sig) {
@@ -129,6 +177,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private void unregisterTask(@NonNull BaseTask<?> task) {
+        mRunningTasks.remove(task);
+    }
+
+    private void registerTask(@NonNull BaseTask<?> task) {
+        mRunningTasks.add(task);
+    }
+
     private abstract static class BaseTask<R> extends AsyncTask<Void, Void, R> {
         @SuppressLint("StaticFieldLeak")
         @NonNull
@@ -142,11 +198,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            final MainActivity activity = mActivity.get();
+            if (activity != null) {
+                activity.registerTask(this);
+            }
+        }
+
+        @Override
         protected final void onPostExecute(@Nullable R result) {
             super.onPostExecute(result);
             final MainActivity activity = mActivity.get();
             if (activity != null) {
                 handleResult(activity, result);
+                activity.unregisterTask(this);
             }
         }
 
@@ -272,7 +338,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 final RawTransaction tx = RawTransaction
                         .createEtherTransaction(nonce, GAS_PRICE, GAS_LIMIT, address, value);
-                final byte[] signed = TransactionEncoder.signMessage(tx, App.CHAIN_ID, mCredentials);
+                final byte[] signed =
+                        TransactionEncoder.signMessage(tx, App.CHAIN_ID, mCredentials);
                 final String hexed = Numeric.toHexString(signed);
 
                 return web3j.ethSendRawTransaction(hexed).send().getTransactionHash();
