@@ -56,6 +56,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mEnsNameToAddress;
     private View mSendEth;
 
+    private static void saveWallet(@NonNull Bip39Wallet wallet, @NonNull SharedPreferences prefs) {
+        final SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("filename", wallet.getFilename());
+        editor.putString("mnemonic", wallet.getMnemonic());
+        editor.apply();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,8 +106,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.menu_main_refresh:
                 reset();
                 return true;
+            case R.id.menu_main_import:
+                showImportDialog();
+                return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showImportDialog() {
+        final ImportWalletDialog dialog = new ImportWalletDialog(this);
+        dialog.show();
     }
 
     private void reset() {
@@ -183,6 +198,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void registerTask(@NonNull BaseTask<?> task) {
         mRunningTasks.add(task);
+    }
+
+    public void onWalletImported(@NonNull Bip39Wallet wallet) {
+        saveWallet(wallet, App.get(this).getPrefs());
+        reset();
     }
 
     private abstract static class BaseTask<R> extends AsyncTask<Void, Void, R> {
@@ -412,13 +432,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             final Bip39Wallet wallet = Bip44WalletUtils.generateBip44Wallet(App.PASSWORD, dir);
             final File file = new File(dir, wallet.getFilename());
             if (!file.exists()) throw new IOException("No file created");
-
-            final SharedPreferences prefs = mApp.getPrefs();
-            final SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("filename", wallet.getFilename());
-            editor.putString("mnemonic", wallet.getMnemonic());
-            editor.apply();
-
+            saveWallet(wallet, mApp.getPrefs());
             return wallet;
         }
     }

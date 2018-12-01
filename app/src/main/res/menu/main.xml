@@ -3,8 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menu_main_import"
+        android:icon="@drawable/ic_input"
+        android:title="Import"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/menu_main_refresh"
         android:icon="@drawable/ic_refresh"
-        android:title="Item"
+        android:title="Refresh"
         app:showAsAction="always" />
 </menu>
