@@ -1,5 +1,8 @@
 package org.solovyev.android.web3a;
 
+import static org.web3j.tx.gas.DefaultGasProvider.GAS_LIMIT;
+import static org.web3j.tx.gas.DefaultGasProvider.GAS_PRICE;
+
 import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -21,7 +24,9 @@ import org.web3j.crypto.Bip44WalletUtils;
 import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Hash;
+import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.Sign;
+import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.utils.Convert;
@@ -35,11 +40,15 @@ import java.math.BigInteger;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    @Nullable
+    private Credentials mCredentials;
+
     private TextView mMnemonic;
     private TextView mAddress;
     private TextView mBalance;
     private TextView mSignature;
     private TextView mEnsNameToAddress;
+    private View mSendEth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +66,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mSignature = findViewById(R.id.signature);
         mSignature.setOnClickListener(this);
+
+        mSendEth = findViewById(R.id.send_eth);
+        mSendEth.setOnClickListener(this);
 
         mEnsNameToAddress = findViewById(R.id.ens_name_to_address);
         mEnsNameToAddress.setOnClickListener(this);
@@ -80,6 +92,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void onCredentialsLoaded(@NonNull Credentials credentials) {
+        mCredentials = credentials;
+        mSendEth.setEnabled(true);
         mAddress.setText(credentials.getAddress());
         new GetBalanceTask(this, credentials).execute();
         new SignMessageTask(this, credentials).execute();
@@ -100,6 +114,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
+        if (v.getId() == R.id.send_eth) {
+            if (mCredentials == null) return;
+            Toast.makeText(this, "Sending 0.01ETH", Toast.LENGTH_SHORT).show();
+            new SendEthTask(mCredentials, this).execute();
+            return;
+        }
         if (v instanceof TextView) {
             final ClipboardManager clipboard =
                     (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
@@ -222,6 +242,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 handleError(e);
             }
             return null;
+        }
+    }
+
+    private static class SendEthTask extends BaseTask<String> {
+        @NonNull
+        private final Credentials mCredentials;
+
+        private SendEthTask(@NonNull Credentials credentials, @NonNull MainActivity activity) {
+            super(activity);
+            mCredentials = credentials;
+        }
+
+        @Override
+        protected void handleResult(@NonNull MainActivity activity, @NonNull String result) {
+
+        }
+
+        @NonNull
+        @Override
+        protected String doInBackground(Void... voids) {
+            final Web3j web3j = mApp.getWeb3j();
+            final String address = mCredentials.getAddress();
+            try {
+                final BigInteger nonce =
+                        web3j.ethGetTransactionCount(address, DefaultBlockParameterName.LATEST)
+                                .send().getTransactionCount();
+                final BigInteger value = Convert.toWei("0.01", Convert.Unit.ETHER).toBigInteger();
+
+                final RawTransaction tx = RawTransaction
+                        .createEtherTransaction(nonce, GAS_PRICE, GAS_LIMIT, address, value);
+                final byte[] signed = TransactionEncoder.signMessage(tx, App.CHAIN_ID, mCredentials);
+                final String hexed = Numeric.toHexString(signed);
+
+                return web3j.ethSendRawTransaction(hexed).send().getTransactionHash();
+            } catch (IOException | RuntimeException e) {
+                handleError(e);
+            }
+            return "";
         }
     }
 

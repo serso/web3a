@@ -10,6 +10,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.web3j.ens.EnsResolver;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.ChainId;
 
 import java.security.Provider;
 import java.security.Security;
@@ -20,6 +21,10 @@ public class App extends MultiDexApplication {
     static final String TAG = "web3a";
     @NonNull
     static final String PASSWORD = "";
+    static final byte CHAIN_ID = ChainId.RINKEBY;
+    @NonNull
+    private static final String CHAIN_HOST =
+            "https://rinkeby.infura.io/v3/817f42773d7d47f9bf35a7b9c353a00a";
 
     @NonNull
     public static App get(@NonNull Context context) {
@@ -75,7 +80,7 @@ public class App extends MultiDexApplication {
     private static class Web3jHolder {
         @NonNull
         private static final Web3j INSTANCE = Web3j.build(
-                new HttpService("https://rinkeby.infura.io/v3/817f42773d7d47f9bf35a7b9c353a00a"));
+                new HttpService(CHAIN_HOST));
     }
 
     private static class EnsResolverHolder {
