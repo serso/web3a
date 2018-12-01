@@ -11,11 +11,19 @@
         android:orientation="vertical"
         tools:context=".MainActivity">
 
-        <android.support.design.widget.TextInputLayout
+        <TextView
+            style="@style/TextAppearance.MaterialComponents.Headline5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginTop="16dp"
+            android:layout_marginRight="16dp"
+            android:text="Wallet" />
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp">
 
             <android.support.design.widget.TextInputEditText
@@ -72,6 +80,30 @@
                 android:layout_height="wrap_content"
                 android:focusable="false"
                 android:hint="Signature" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <TextView
+            style="@style/TextAppearance.MaterialComponents.Headline5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="16dp"
+            android:text="ENS" />
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp">
+
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/ens_name_to_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:hint="Name => Address" />
 
         </android.support.design.widget.TextInputLayout>
 

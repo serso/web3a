@@ -7,6 +7,7 @@ import android.support.multidex.MultiDex;
 import android.support.multidex.MultiDexApplication;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.web3j.ens.EnsResolver;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
@@ -62,6 +63,11 @@ public class App extends MultiDexApplication {
     }
 
     @NonNull
+    EnsResolver getEnsResolver() {
+        return EnsResolverHolder.INSTANCE;
+    }
+
+    @NonNull
     SharedPreferences getPrefs() {
         return getSharedPreferences("wallet", 0);
     }
@@ -70,5 +76,10 @@ public class App extends MultiDexApplication {
         @NonNull
         private static final Web3j INSTANCE = Web3j.build(
                 new HttpService("https://rinkeby.infura.io/v3/817f42773d7d47f9bf35a7b9c353a00a"));
+    }
+
+    private static class EnsResolverHolder {
+        @NonNull
+        private static final EnsResolver INSTANCE = new EnsResolver(Web3jHolder.INSTANCE);
     }
 }

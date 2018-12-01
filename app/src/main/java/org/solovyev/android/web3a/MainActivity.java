@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mAddress;
     private TextView mBalance;
     private TextView mSignature;
+    private TextView mEnsNameToAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +56,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSignature = findViewById(R.id.signature);
         mSignature.setOnClickListener(this);
 
+        mEnsNameToAddress = findViewById(R.id.ens_name_to_address);
+        mEnsNameToAddress.setOnClickListener(this);
+
         new LoadWalletTask(this).execute();
+        new EnsResolveNameToAddressTask(this).execute();
     }
 
     private void onWalletLoaded(@Nullable Bip39Wallet wallet) {
@@ -65,6 +70,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         mMnemonic.setText(wallet.getMnemonic());
         new LoadCredentialsTask(this, wallet).execute();
+    }
+
+    private void onEnsNameResolved(@NonNull String name, @NonNull String address) {
+        mEnsNameToAddress.setText(
+                String.format("%s => %s", name, TextUtils.isEmpty(address) ? "N/A" : address));
     }
 
     private void onCredentialsLoaded(@NonNull Credentials credentials) {
@@ -206,10 +216,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return web3j
                         .ethGetBalance(mCredentials.getAddress(), DefaultBlockParameterName.LATEST)
                         .send().getBalance();
-            } catch (IOException e) {
+            } catch (IOException | RuntimeException e) {
                 handleError(e);
             }
             return null;
+        }
+    }
+
+    private static class EnsResolveNameToAddressTask extends BaseTask<String> {
+        @NonNull
+        private final String mName = "michalzalecki.test";
+
+        private EnsResolveNameToAddressTask(@NonNull MainActivity activity) {
+            super(activity);
+        }
+
+        @Override
+        protected void handleResult(@NonNull MainActivity activity, @NonNull String address) {
+            activity.onEnsNameResolved(mName, address);
+        }
+
+        @NonNull
+        @Override
+        protected String doInBackground(Void... voids) {
+            try {
+                final String address = mApp.getEnsResolver().resolve(mName);
+                return address == null ? "" : address;
+            } catch (RuntimeException e) {
+                handleError(e);
+            }
+            return "";
         }
     }
 
