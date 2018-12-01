@@ -59,7 +59,7 @@ public class App extends MultiDexApplication {
         // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
         // of that it's possible to have another BC implementation loaded in VM.
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-        Security.addProvider(new BouncyCastleProvider());
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
     }
 
     @NonNull
